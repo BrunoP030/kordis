@@ -1,0 +1,49 @@
+@import "@syncfusion/ej2-base/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-buttons/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-inputs/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-dropdowns/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-calendars/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-grids/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-navigations/styles/tailwind.css";
+
+/*
+ * Tokens de marca Kordis — extraídos do Figma (logo + print do dashboard).
+ * Qualquer tela nova deve usar essas variáveis, nunca cores "cruas" no CSS,
+ * pra manter tudo consistente se a marca mudar de tom no futuro.
+ */
+:root {
+  --kordis-navy-900: #14245b;   /* tinta da logo / títulos principais */
+  --kordis-navy-800: #1e3a8a;   /* topbar / botões primários */
+  --kordis-teal-500: #2ba3b9;   /* cor de destaque (símbolo K) */
+
+  --kordis-bg-page: #ffffff;
+  --kordis-bg-sidebar: #f1f5f9;
+  --kordis-border: #e2e8f0;
+
+  --kordis-text-primary: #1e293b;
+  --kordis-text-secondary: #64748b;
+  --kordis-text-on-navy: #f8fafc;
+
+  --kordis-success: #16a34a;
+  --kordis-danger: #f6627b;
+  --kordis-danger-text: #d93a54;
+
+  --kordis-sidebar-width: 240px;
+  --kordis-sidebar-width-collapsed: 72px;
+  --kordis-topbar-height: 56px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--kordis-bg-page);
+  color: var(--kordis-text-primary);
+}
+
+/* Ícones Material (classe usada nos componentes: <span class="material-icons">) */
+.material-icons {
+  font-size: 20px;
+  vertical-align: middle;
+  line-height: 1;
+}
