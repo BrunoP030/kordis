@@ -12,11 +12,19 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RolePermissionSeeder::class);
 
-        $admin = User::firstOrCreate(
+        $admin = User::updateOrCreate(
             ['email' => 'admin@kordis.com'],
-            ['name' => 'Administrador do Sistema', 'password' => Hash::make('senha-forte-123')]
+            [
+                'name' => 'Administrador do Sistema',
+                'password' => Hash::make('senha-forte-123'),
+                'ativo' => true,
+            ]
         );
 
         $admin->assignRole('Administrador');
+
+        $this->call(NursingTaskSeeder::class);
+        $this->call(SurgicalSeeder::class);
+        $this->call(BedSeeder::class);
     }
 }

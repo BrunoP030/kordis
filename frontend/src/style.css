@@ -5,6 +5,9 @@
 @import "@syncfusion/ej2-vue-calendars/styles/tailwind.css";
 @import "@syncfusion/ej2-vue-grids/styles/tailwind.css";
 @import "@syncfusion/ej2-vue-navigations/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-kanban/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-popups/styles/tailwind.css";
+@import "@syncfusion/ej2-vue-schedule/styles/tailwind.css";
 
 /*
  * Tokens de marca Kordis — extraídos do Figma (logo + print do dashboard).
@@ -27,6 +30,15 @@
   --kordis-success: #16a34a;
   --kordis-danger: #f6627b;
   --kordis-danger-text: #d93a54;
+
+  --kordis-task-urgente: #F43F5E;
+  --kordis-task-progresso: #EAB308;
+  --kordis-task-concluido: #3DC599;
+
+  --kordis-status-agendado-bg: #DBEAFE;
+  --kordis-status-agendado-dot: #3B82F6;
+  --kordis-status-andamento-bg: #D1FAE5;
+  --kordis-status-andamento-dot: #10B981;
 
   --kordis-sidebar-width: 240px;
   --kordis-sidebar-width-collapsed: 72px;

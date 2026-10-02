@@ -9,18 +9,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.3.0",
-    "pinia": "^2.1.7",
-    "axios": "^1.7.2",
+    "@syncfusion/ej2-base": "^25.1.35",
+    "@syncfusion/ej2-vue-buttons": "^25.1.35",
+    "@syncfusion/ej2-vue-calendars": "^25.1.35",
+    "@syncfusion/ej2-vue-dropdowns": "^25.1.35",
     "@syncfusion/ej2-vue-grids": "^25.1.35",
     "@syncfusion/ej2-vue-inputs": "^25.1.35",
-    "@syncfusion/ej2-vue-buttons": "^25.1.35",
-    "@syncfusion/ej2-vue-dropdowns": "^25.1.35",
-    "@syncfusion/ej2-vue-calendars": "^25.1.35",
+    "@syncfusion/ej2-vue-kanban": "^25.1.35",
     "@syncfusion/ej2-vue-navigations": "^25.1.35",
     "@syncfusion/ej2-vue-notifications": "^25.1.35",
-    "@syncfusion/ej2-base": "^25.1.35"
+    "@syncfusion/ej2-vue-popups": "^25.2.7",
+    "@syncfusion/ej2-vue-schedule": "^25.2.7",
+    "axios": "^1.7.2",
+    "laravel-echo": "^2.5.0",
+    "pinia": "^2.1.7",
+    "pusher-js": "^8.6.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
