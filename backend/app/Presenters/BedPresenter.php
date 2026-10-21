@@ -9,8 +9,8 @@ class BedPresenter
 {
     private const ROTULOS = [
         'ocupado' => 'Ocupado',
-        'limpeza' => 'Limpeza',
-        'disponivel' => 'Disponível',
+        'limpeza' => 'Aguardando Higienização',
+        'disponivel' => 'Vago',
     ];
 
     /** @param Collection<int, Bed> $leitos Lista plana; o agrupamento é feito pelo Grid. */

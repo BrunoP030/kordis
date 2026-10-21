@@ -29,6 +29,8 @@ class NursingTaskPresenter
             'Titulo' => $task->titulo,
             'Subtitulo' => $this->subtitulo($task),
             'CorBorda' => $this->corBorda($task),
+            'Categoria' => $task->categoria,
+            'Leito' => $task->leito,
             'Concluido' => $task->status === 'concluido',
         ];
     }

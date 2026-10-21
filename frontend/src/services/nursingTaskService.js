@@ -6,6 +6,11 @@ export default {
     return data
   },
 
+  async criar(dados) {
+    const { data } = await api.post('/nursing-tasks', dados)
+    return data
+  },
+
   async atualizarStatus(id, status) {
     const { data } = await api.put(`/nursing-tasks/${id}/status`, { status })
     return data

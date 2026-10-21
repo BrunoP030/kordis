@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(RolePermissionSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
 
         $admin = User::updateOrCreate(
             ['email' => 'admin@kordis.com'],
@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
         $admin->assignRole('Administrador');
 
         $this->call(NursingTaskSeeder::class);
-        $this->call(SurgicalSeeder::class);
         $this->call(BedSeeder::class);
+        $this->call(PatientSeeder::class);
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SurgicalRoom extends Model
 {
-    protected $fillable = ['nome', 'ativa'];
+    protected $fillable = ['nome', 'especialidade', 'ativa'];
 
     protected function casts(): array
     {

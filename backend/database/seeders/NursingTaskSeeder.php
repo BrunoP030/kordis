@@ -13,7 +13,7 @@ class NursingTaskSeeder extends Seeder
             ['titulo' => 'Emergência - Leito 201', 'descricao' => 'Atendimento imediato', 'status' => 'a_fazer', 'prioridade' => 'urgente', 'leito' => '201'],
             ['titulo' => 'Monitoramento IoT', 'descricao' => 'Sinais vitais em acompanhamento', 'status' => 'em_andamento', 'prioridade' => 'normal'],
             ['titulo' => 'Triagem de Admissão', 'descricao' => 'Novos pacientes', 'status' => 'a_fazer', 'prioridade' => 'normal'],
-            ['titulo' => 'Higienização Leito 302', 'descricao' => 'Finalizada', 'status' => 'concluido', 'prioridade' => 'baixa', 'leito' => '302', 'concluido_em' => now()],
+            ['titulo' => 'Higienização Leito 302', 'descricao' => 'Finalizada', 'status' => 'concluido', 'prioridade' => 'baixa', 'categoria' => 'Higienização', 'leito' => '302', 'concluido_em' => now()],
         ];
 
         foreach ($tarefas as $tarefa) {

@@ -25,6 +25,11 @@ class Patient extends Model
         return $this->belongsTo(User::class, 'criado_por');
     }
 
+    public function clinicalRecords()
+    {
+        return $this->hasMany(ClinicalRecord::class);
+    }
+
     public function getIdadeAttribute(): int
     {
         return $this->data_nascimento->age;

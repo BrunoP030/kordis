@@ -27,12 +27,6 @@ const routes = [
     meta: { permissao: 'leitos.visualizar' },
   },
   {
-    path: '/chat-interno',
-    name: 'chat-interno.painel',
-    component: () => import('../views/chat-interno/ChatInternoPainel.vue'),
-    meta: { permissao: 'chat-interno.visualizar' },
-  },
-  {
     path: '/prontuarios',
     name: 'prontuarios.painel',
     component: () => import('../views/prontuarios/ProntuariosPainel.vue'),

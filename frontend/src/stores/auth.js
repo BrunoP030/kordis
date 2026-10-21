@@ -13,6 +13,13 @@ export const useAuthStore = defineStore('auth', {
     estaAutenticado: (state) => !!state.usuario,
     tem: (state) => (permissao) => state.permissoes.includes(permissao),
     temPerfil: (state) => (perfil) => state.perfis.includes(perfil),
+    // Compara sem diferenciar maiúsculas e aceita vários perfis: isRole('medico', 'enfermeiro').
+    isRole: (state) => (...perfis) =>
+      perfis.some((p) => state.perfis.some((atual) => atual.toLowerCase() === p.toLowerCase())),
+    // Só o perfil de limpeza e nenhum outro (espelha User::apenasLimpeza() do backend).
+    apenasLimpeza() {
+      return this.perfis.length === 1 && this.isRole('limpeza')
+    },
     iniciais: (state) => {
       if (!state.usuario?.name) return ''
       return state.usuario.name

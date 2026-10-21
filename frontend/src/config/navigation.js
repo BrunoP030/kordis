@@ -13,7 +13,7 @@
  *               (catálogo completo: https://fonts.google.com/icons?icon.set=Material+Icons)
  * - routeName:  precisa bater com o `name` de uma rota em router/index.js
  * - permission: precisa bater com uma permissão do backend (Spatie) —
- *               ver database/seeders/RolePermissionSeeder.php no backend.
+ *               ver database/seeders/RolesAndPermissionsSeeder.php no backend.
  *               Se o usuário logado não tiver essa permissão, o item some
  *               sozinho (checado em AppSidebar.vue via authStore.tem()).
  */
@@ -35,12 +35,6 @@ export default [
     icon: 'king_bed',
     routeName: 'leitos.painel',
     permission: 'leitos.visualizar',
-  },
-  {
-    label: 'Chat Interno',
-    icon: 'forum',
-    routeName: 'chat-interno.painel',
-    permission: 'chat-interno.visualizar',
   },
   {
     label: 'Prontuários',

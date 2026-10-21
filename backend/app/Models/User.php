@@ -25,6 +25,14 @@ class User extends Authenticatable
         ];
     }
 
+    /** Perfil de limpeza e nenhum outro: enxerga apenas as tarefas de higienização. */
+    public function apenasLimpeza(): bool
+    {
+        $perfis = $this->getRoleNames();
+
+        return $perfis->count() === 1 && $perfis->first() === 'limpeza';
+    }
+
     public function permissoesParaFrontend(): array
     {
         return [
