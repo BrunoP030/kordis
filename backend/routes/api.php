@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BedController;
+use App\Http\Controllers\Api\CadastroController;
 use App\Http\Controllers\Api\ClinicalRecordController;
 use App\Http\Controllers\Api\NursingTaskController;
+use App\Http\Controllers\Api\OpcoesController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\SurgicalBookingController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +15,20 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Listas de apoio para os seletores (prioridades, categorias, especialidades, tipos de prontuário, leitos).
+    Route::get('/opcoes', [OpcoesController::class, 'index']);
+    Route::get('/opcoes/pacientes', [OpcoesController::class, 'pacientes'])->middleware('permission:leitos.gerenciar|tarefas.criar');
+
+    // Tela "Cadastro": CRUD genérico dos cadastros de apoio (ver App\Cadastros\RegistroCadastros).
+    Route::middleware('permission:cadastros.gerenciar')->prefix('cadastros')->group(function () {
+        Route::get('/', [CadastroController::class, 'definicoes']);
+        Route::get('/{recurso}', [CadastroController::class, 'index']);
+        Route::get('/{recurso}/opcoes', [CadastroController::class, 'opcoes']);
+        Route::post('/{recurso}', [CadastroController::class, 'store']);
+        Route::put('/{recurso}/{id}', [CadastroController::class, 'update']);
+        Route::delete('/{recurso}/{id}', [CadastroController::class, 'destroy']);
+    });
 
     Route::get('/patients', [PatientController::class, 'index'])->middleware('permission:pacientes.visualizar');
     Route::get('/patients/{patient}', [PatientController::class, 'show'])->middleware('permission:pacientes.visualizar');

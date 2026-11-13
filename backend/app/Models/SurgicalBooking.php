@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class SurgicalBooking extends Model
 {
+    protected $table = 'agendamentos_cirurgicos';
+
     public const TIPOS = ['eletiva', 'urgencia', 'emergencia'];
     public const PORTES = ['pequeno', 'medio', 'grande', 'especial'];
     public const ANESTESIAS = ['geral', 'raquidiana', 'peridural', 'sedacao', 'local', 'bloqueio'];

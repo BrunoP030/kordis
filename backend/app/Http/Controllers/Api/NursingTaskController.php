@@ -31,7 +31,7 @@ class NursingTaskController extends Controller
     public function atualizarStatus(Request $request, NursingTask $nursingTask): JsonResponse
     {
         // A equipe de limpeza só mexe nos cards de higienização.
-        if ($request->user()->apenasLimpeza() && $nursingTask->categoria !== NursingTask::CATEGORIA_HIGIENIZACAO) {
+        if ($request->user()->apenasLimpeza() && ! $nursingTask->ehHigienizacao()) {
             abort(403, 'Sem permissão para alterar esta tarefa.');
         }
 

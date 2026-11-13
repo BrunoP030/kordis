@@ -70,11 +70,11 @@ export function useNursingTaskPresenter() {
 
   onMounted(() => {
     carregar()
-    obterEcho().private(canal).listen('.tarefa.atualizada', (evento) => aplicarTarefa(evento.tarefa))
+    obterEcho()?.private(canal).listen('.tarefa.atualizada', (evento) => aplicarTarefa(evento.tarefa))
   })
 
   onUnmounted(() => {
-    obterEcho().leave(canal)
+    obterEcho()?.leave(canal)
   })
 
   return { tarefas: tarefasVisiveis, carregando, erro, moverTarefa, criarTarefa }

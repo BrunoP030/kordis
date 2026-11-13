@@ -25,7 +25,7 @@ class PatientController extends Controller
 
     public function show(Patient $patient): JsonResponse
     {
-        return response()->json($this->presenter->paraDetalhe($patient));
+        return response()->json($this->presenter->paraDetalhe($patient->load('pacienteAlergias.alergia')));
     }
 
     public function store(PatientRequest $request): JsonResponse

@@ -23,6 +23,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'prontuarios.visualizar', 'prontuarios.criar', 'prontuarios.editar',
             'pacientes.visualizar', 'pacientes.criar', 'pacientes.editar', 'pacientes.excluir',
             'usuarios.gerenciar',
+            'cadastros.gerenciar',
         ];
 
         foreach ($permissoes as $nome) {

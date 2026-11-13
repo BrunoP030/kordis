@@ -6,13 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class ClinicalRecord extends Model
 {
-    public const TIPOS = ['evolucao', 'prescricao', 'exame', 'procedimento', 'alta'];
+    protected $table = 'prontuarios';
 
-    protected $fillable = ['patient_id', 'autor_id', 'tipo', 'titulo', 'descricao'];
+    protected $fillable = ['paciente_id', 'autor_id', 'tipo_prontuario_id', 'titulo', 'descricao'];
 
     public function patient()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Patient::class, 'paciente_id');
+    }
+
+    public function tipo()
+    {
+        return $this->belongsTo(TipoProntuario::class, 'tipo_prontuario_id');
     }
 
     public function autor()

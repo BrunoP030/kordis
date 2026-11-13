@@ -10,6 +10,7 @@ let instancia = null
 // axios (api.js), que já envia o cookie de sessão do Sanctum e o token XSRF.
 export function obterEcho() {
   if (instancia) return instancia
+  if (!import.meta.env.VITE_REVERB_APP_KEY) return null
 
   instancia = new Echo({
     broadcaster: 'reverb',

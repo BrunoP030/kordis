@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Especialidade;
+use App\Models\SurgicalRoom;
+use App\Support\SimNao;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,10 +20,10 @@ class SurgicalRoomRequest extends FormRequest
         return [
             'nome' => [
                 'required', 'string', 'max:50',
-                Rule::unique('surgical_rooms', 'nome')->ignore($this->route('surgicalRoom')?->id),
+                Rule::unique(SurgicalRoom::class, 'nome')->ignore($this->route('surgicalRoom')?->id),
             ],
-            'especialidade' => ['nullable', 'string', 'max:80'],
-            'ativa' => ['boolean'],
+            'especialidade_id' => ['nullable', 'integer', Rule::exists(Especialidade::class, 'id')],
+            'status' => ['sometimes', 'integer', Rule::in(SimNao::VALORES)], // 0 = Não, 1 = Sim
         ];
     }
 

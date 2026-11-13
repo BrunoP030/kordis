@@ -4,6 +4,7 @@ namespace App\Presenters;
 
 use App\Models\SurgicalBooking;
 use App\Models\SurgicalRoom;
+use App\Support\SimNao;
 use Illuminate\Support\Collection;
 
 class SurgicalBookingPresenter
@@ -47,8 +48,10 @@ class SurgicalBookingPresenter
         return [
             'Id' => $sala->id,
             'Nome' => $sala->nome,
-            'Especialidade' => $sala->especialidade,
-            'Ativa' => $sala->ativa,
+            'EspecialidadeId' => $sala->especialidade_id,
+            'Especialidade' => $sala->especialidade?->nome,
+            'Status' => $sala->status,
+            'Ativa' => $sala->status === SimNao::SIM,
         ];
     }
 

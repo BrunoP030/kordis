@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\SurgicalBooking;
+use App\Models\SurgicalRoom;
 use App\Services\SurgicalBookingService;
+use App\Support\SimNao;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,7 +21,7 @@ class SurgicalBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'surgical_room_id' => ['required', 'integer', Rule::exists('surgical_rooms', 'id')->where('ativa', true)],
+            'surgical_room_id' => ['required', 'integer', Rule::exists(SurgicalRoom::class, 'id')->where('status', SimNao::SIM)],
             'procedimento' => ['required', 'string', 'max:255'],
             'cirurgiao' => ['required', 'string', 'max:255'],
             'paciente' => ['required', 'string', 'max:30'],

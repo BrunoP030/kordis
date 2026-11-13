@@ -6,6 +6,11 @@ const CANAL = 'centro-cirurgico'
 
 const dois = (n) => String(n).padStart(2, '0')
 const paraIso = (d) => `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`
+const paraIsoHora = (d) => `${paraIso(d)}T${dois(d.getHours())}:${dois(d.getMinutes())}:00`
+
+// Status que continuam ocupando a sala enquanto não terminam: o bloco cresce até "agora".
+const STATUS_QUE_ESTENDEM = ['em_andamento', 'atrasado']
+const minutoAtual = () => Math.floor(Date.now() / 60000) * 60000
 
 // Converte erros de validação do Laravel em { campo: 'mensagem' }.
 function extrairErros(e, padrao) {
@@ -19,13 +24,46 @@ function extrairErros(e, padrao) {
 
 export function useSurgicalBoardPresenter() {
   const data = ref(paraIso(new Date()))
-  const cirurgias = ref([])
+  const brutas = ref([]) // como vieram do servidor
   const salas = ref([])
   const carregando = ref(false)
   const erro = ref(null)
 
-  // Canceladas saem da grade, mas continuam contadas no resumo do dia.
-  const reservas = computed(() => cirurgias.value.filter((c) => c.Status !== 'cancelado'))
+  // Relógio com resolução de minuto: só dispara reatividade quando o minuto vira.
+  const agora = ref(minutoAtual())
+  let relogio = null
+
+  // Status efetivo calculado no cliente também, para "agendado" virar "atrasado" sem recarregar.
+  const cirurgias = computed(() =>
+    brutas.value.map((c) =>
+      c.Status === 'agendado' && new Date(c.StartTime).getTime() <= agora.value ? { ...c, Status: 'atrasado' } : c
+    )
+  )
+
+  // Blocos da grade. Canceladas saem da grade, mas continuam contadas no resumo do dia.
+  // Em andamento/atrasada que passou do fim previsto estica até agora; finalizada que
+  // estourou o horário mantém o bloco até o fim real.
+  const reservas = computed(() =>
+    cirurgias.value
+      .filter((c) => c.Status !== 'cancelado')
+      .map((c) => {
+        const previsto = new Date(c.EndTime).getTime()
+        let fim = previsto
+        if (STATUS_QUE_ESTENDEM.includes(c.Status)) fim = Math.max(previsto, agora.value)
+        else if (c.FimReal) fim = Math.max(previsto, new Date(c.FimReal).getTime())
+        const excedente = Math.round((fim - previsto) / 60000)
+        // O bloco nunca passa das 23:59 do dia da cirurgia: se atravessar a meia-noite,
+        // a agenda trata como evento de vários dias e o joga na faixa de "dia inteiro".
+        const limiteDia = new Date(`${c.StartTime.slice(0, 10)}T23:59:00`).getTime()
+        const fimBloco = Math.max(previsto, Math.min(fim, limiteDia))
+        return {
+          ...c,
+          FimPrevisto: c.EndTime,
+          EndTime: fimBloco > previsto ? paraIsoHora(new Date(fimBloco)) : c.EndTime,
+          Excedente: excedente,
+        }
+      })
+  )
 
   const resumo = computed(() => {
     const conta = (status) => cirurgias.value.filter((c) => c.Status === status).length
@@ -56,7 +94,7 @@ export function useSurgicalBoardPresenter() {
         surgicalBookingService.listar(data.value),
       ])
       salas.value = listaSalas
-      cirurgias.value = lista
+      brutas.value = lista
     } catch (e) {
       erro.value = e.response?.data?.message ?? 'Não foi possível carregar o mapa cirúrgico.'
     } finally {
@@ -66,14 +104,14 @@ export function useSurgicalBoardPresenter() {
 
   // Atualiza só a cirurgia afetada (insere, substitui ou remove do dia), sem recarregar a lista.
   function aplicarEvento(cirurgia) {
-    const existe = cirurgias.value.some((c) => c.Id === cirurgia.Id)
+    const existe = brutas.value.some((c) => c.Id === cirurgia.Id)
     if (!cirurgia.StartTime.startsWith(data.value)) {
-      if (existe) cirurgias.value = cirurgias.value.filter((c) => c.Id !== cirurgia.Id)
+      if (existe) brutas.value = brutas.value.filter((c) => c.Id !== cirurgia.Id)
       return
     }
-    cirurgias.value = existe
-      ? cirurgias.value.map((c) => (c.Id === cirurgia.Id ? cirurgia : c))
-      : [...cirurgias.value, cirurgia]
+    brutas.value = existe
+      ? brutas.value.map((c) => (c.Id === cirurgia.Id ? cirurgia : c))
+      : [...brutas.value, cirurgia]
   }
 
   function mudarDia(dias) {
@@ -117,7 +155,12 @@ export function useSurgicalBoardPresenter() {
 
   async function alternarSala(sala) {
     try {
-      await surgicalBookingService.atualizarSala(sala.Id, { nome: sala.Nome, especialidade: sala.Especialidade, ativa: !sala.Ativa })
+      // status: 0 = Não (inativa), 1 = Sim (ativa)
+      await surgicalBookingService.atualizarSala(sala.Id, {
+        nome: sala.Nome,
+        especialidade_id: sala.EspecialidadeId,
+        status: sala.Ativa ? 0 : 1,
+      })
       await recarregarSalas()
       return { ok: true }
     } catch (e) {
@@ -139,13 +182,18 @@ export function useSurgicalBoardPresenter() {
   watch(data, carregar)
 
   onMounted(async () => {
+    relogio = setInterval(() => {
+      const m = minutoAtual()
+      if (m !== agora.value) agora.value = m
+    }, 15000)
     await carregar()
     recarregarSalas().catch(() => {})
-    obterEcho().private(CANAL).listen('.reserva.atualizada', (evento) => aplicarEvento(evento.reserva))
+    obterEcho()?.private(CANAL).listen('.reserva.atualizada', (evento) => aplicarEvento(evento.reserva))
   })
 
   onUnmounted(() => {
-    obterEcho().leave(CANAL)
+    clearInterval(relogio)
+    obterEcho()?.leave(CANAL)
   })
 
   return {

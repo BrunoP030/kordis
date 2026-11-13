@@ -13,7 +13,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
-    protected $fillable = ['name', 'email', 'cpf', 'registro_profissional', 'password', 'ativo'];
+    /** ativo: 0 = Não, 1 = Sim. Dados da pessoa (CPF, registro profissional) ficam em funcionarios. */
+    protected $fillable = ['name', 'email', 'funcionario_id', 'password', 'ativo'];
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
@@ -21,8 +22,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'ativo' => 'boolean',
+            'ativo' => 'integer',
         ];
+    }
+
+    public function funcionario()
+    {
+        return $this->belongsTo(Funcionario::class, 'funcionario_id');
     }
 
     /** Perfil de limpeza e nenhum outro: enxerga apenas as tarefas de higienização. */

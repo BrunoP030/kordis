@@ -2,11 +2,11 @@
 import { ref, reactive, computed } from 'vue'
 import { DialogComponent as EjsDialog } from '@syncfusion/ej2-vue-popups'
 import { DropDownListComponent as EjsDropdownlist } from '@syncfusion/ej2-vue-dropdowns'
-import { TextBoxComponent as EjsTextbox } from '@syncfusion/ej2-vue-inputs'
 import { DateTimePickerComponent as EjsDatetimepicker, DatePickerComponent as EjsDatepicker } from '@syncfusion/ej2-vue-calendars'
 import { ButtonComponent as EjsButton } from '@syncfusion/ej2-vue-buttons'
 import { useAuthStore } from '../../stores/auth'
 import { useBedPresenter } from '../../presenters/useBedPresenter'
+import opcoesService from '../../services/opcoesService'
 
 const auth = useAuthStore()
 const { leitos, carregando, erro, mudarStatus } = useBedPresenter()
@@ -36,7 +36,16 @@ const dialogo = ref(null)
 const enviando = ref(false)
 const leitoAtual = ref(null)
 const erros = reactive({})
-const form = reactive({ status: null, paciente_nome: '', entrada_em: null, previsao_alta: null })
+const form = reactive({ status: null, paciente_id: null, entrada_em: null, previsao_alta: null })
+const pacientes = ref([])
+
+async function carregarPacientes() {
+  try {
+    pacientes.value = await opcoesService.pacientes()
+  } catch {
+    erros.geral = 'Não foi possível carregar a lista de pacientes.'
+  }
+}
 
 function abrirModal(leito) {
   if (!podeGerenciar.value) return
@@ -44,10 +53,11 @@ function abrirModal(leito) {
   Object.keys(erros).forEach((k) => delete erros[k])
   Object.assign(form, {
     status: leito.Status,
-    paciente_nome: leito.Paciente ?? '',
+    paciente_id: leito.PacienteId ?? null,
     entrada_em: new Date(),
     previsao_alta: null,
   })
+  carregarPacientes()
   dialogo.value?.show()
 }
 
@@ -60,7 +70,7 @@ function validar() {
   Object.keys(erros).forEach((k) => delete erros[k])
   if (!form.status) erros.status = 'O status é obrigatório.'
   if (form.status === 'ocupado') {
-    if (!form.paciente_nome.trim()) erros.paciente_nome = 'Informe o paciente para ocupar o leito.'
+    if (!form.paciente_id) erros.paciente_id = 'Selecione o paciente para ocupar o leito.'
     if (!form.entrada_em) erros.entrada_em = 'Informe a data/hora de entrada.'
     else if (form.previsao_alta && paraData(form.previsao_alta) < paraData(form.entrada_em)) {
       erros.previsao_alta = 'A previsão de alta não pode ser antes da entrada.'
@@ -74,7 +84,7 @@ async function salvar() {
   enviando.value = true
   const extras = form.status === 'ocupado'
     ? {
-        paciente_nome: form.paciente_nome.trim(),
+        paciente_id: form.paciente_id,
         entrada_em: paraDataHora(form.entrada_em),
         previsao_alta: form.previsao_alta ? paraData(form.previsao_alta) : null,
       }
@@ -136,7 +146,7 @@ async function salvar() {
         <span class="leito-status">{{ leito.StatusLabel }}</span>
 
         <dl v-if="leito.Status === 'ocupado'" class="leito-dados">
-          <div><dt>Paciente</dt><dd>{{ leito.Paciente }}</dd></div>
+          <div><dt>Paciente</dt><dd>{{ leito.Paciente ?? '—' }}</dd></div>
           <div><dt>Entrada</dt><dd>{{ leito.Entrada ?? '—' }}</dd></div>
           <div><dt>Previsão de alta</dt><dd>{{ leito.PrevisaoAlta ?? '—' }}</dd></div>
         </dl>
@@ -169,13 +179,20 @@ async function salvar() {
         </label>
 
         <p v-if="form.status === 'limpeza' && leitoAtual?.Status !== 'limpeza'" class="aviso">
-          Uma tarefa de higienização será criada automaticamente na coluna Pendente do Dashboard.
+          Uma tarefa de higienização será criada automaticamente na coluna Pendente do Painel.
         </p>
 
         <template v-if="form.status === 'ocupado'">
           <label class="campo">Paciente
-            <ejs-textbox v-model="form.paciente_nome" />
-            <span v-if="erros.paciente_nome" class="campo-erro">{{ erros.paciente_nome }}</span>
+            <ejs-dropdownlist
+              v-model="form.paciente_id"
+              :dataSource="pacientes"
+              :fields="{ text: 'Nome', value: 'Id' }"
+              :allowFiltering="true"
+              filterType="Contains"
+              placeholder="Selecione o paciente"
+            />
+            <span v-if="erros.paciente_id" class="campo-erro">{{ erros.paciente_id }}</span>
           </label>
           <label class="campo">Entrada
             <ejs-datetimepicker v-model="form.entrada_em" format="dd/MM/yyyy HH:mm" />
