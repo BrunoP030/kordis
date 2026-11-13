@@ -22,6 +22,7 @@ class ClinicalRecordController extends Controller
         $pacientes = Patient::query()
             ->when($busca !== '', fn ($q) => $q->where('nome_completo', 'ilike', "%{$busca}%"))
             ->orderBy('nome_completo')
+            ->with('pacienteAlergias.alergia')
             ->limit(50)
             ->get();
 
@@ -30,7 +31,8 @@ class ClinicalRecordController extends Controller
 
     public function index(Patient $patient): JsonResponse
     {
-        $registros = $patient->clinicalRecords()->with('autor')->latest()->latest('id')->get();
+        $patient->load('pacienteAlergias.alergia');
+        $registros = $patient->clinicalRecords()->with(['autor', 'tipo'])->latest()->latest('id')->get();
 
         return response()->json([
             'Paciente' => $this->presenter->paraPaciente($patient),
@@ -42,6 +44,6 @@ class ClinicalRecordController extends Controller
     {
         $registro = $patient->clinicalRecords()->create($request->validated() + ['autor_id' => $request->user()->id]);
 
-        return response()->json($this->presenter->paraRegistro($registro->load('autor')), 201);
+        return response()->json($this->presenter->paraRegistro($registro->load(['autor', 'tipo'])), 201);
     }
 }

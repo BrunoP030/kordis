@@ -16,6 +16,7 @@ kordis/
 | Dashboard | `/dashboard` | `dashboard.visualizar` | Kanban de tarefas de enfermagem (A fazer / Em andamento / Concluído), com categorias e prioridade. Atualiza em tempo real. |
 | Centro Cirúrgico | `/centro-cirurgico` | `centro-cirurgico.visualizar` | Agenda e painel das salas cirúrgicas: agendar, editar, iniciar, finalizar, liberar sala e cancelar cirurgias. Tempo real. |
 | Leitos | `/leitos` | `leitos.visualizar` | Painel de leitos (ocupado / limpeza / disponível) e troca de status. |
+| Cadastro | `/cadastros` | `cadastros.gerenciar` | Grid com inserir, editar e excluir dos cadastros de apoio: cargos, funcionários, especialidades, prioridades, categorias, tipos de prontuário, alergias, pacientes e alergias dos pacientes. Campos FK viram combobox só com registros ativos; campos 0/1 viram Sim/Não (padrão Sim). |
 | Prontuários | `/prontuarios` | `prontuarios.visualizar` | Busca de pacientes e histórico clínico em linha do tempo, com filtro por tipo. O botão **Adicionar Prontuário** (permissão `prontuarios.criar`) registra evolução, prescrição, exame, procedimento ou alta. |
 
 > O módulo de Chat Interno foi removido do escopo e não será implementado por enquanto.
@@ -57,6 +58,47 @@ Autenticação via Laravel Sanctum. Todas as rotas abaixo exigem `auth:sanctum` 
 | GET/POST/PUT | `/api/surgical-rooms[/{id}]` | Salas cirúrgicas |
 | GET · PUT | `/api/beds` · `/api/beds/{id}/status` | Leitos |
 | GET/POST · PUT | `/api/nursing-tasks` · `/api/nursing-tasks/{id}/status` | Tarefas de enfermagem |
+| GET | `/api/opcoes` | Cadastros de apoio para os seletores: prioridades, categorias, especialidades, tipos de prontuário (ativos) e leitos |
+| GET · GET/POST · PUT/DELETE | `/api/cadastros` · `/api/cadastros/{recurso}` · `/api/cadastros/{recurso}/{id}` | Definições e CRUD da tela Cadastro (`cadastros.gerenciar`); `/api/cadastros/{recurso}/opcoes` lista só os ativos |
+| GET | `/api/opcoes/pacientes` | Pacientes para os seletores de leito e tarefa (`leitos.gerenciar` ou `tarefas.criar`) |
+
+## Banco de dados
+
+PostgreSQL, tabelas em português. As tabelas internas do Laravel (`users`, `sessions`, `cache`, `jobs`, `migrations`) e as do Spatie (`roles`, `permissions`…) mantêm o nome original.
+
+### Convenção dos campos "0 ou 1"
+
+Campos de sim/não são `smallint` com restrição `CHECK (campo IN (0, 1))`:
+
+> **0 = Não · 1 = Sim**
+
+| Tabela | Campo | Significado |
+|---|---|---|
+| `pacientes` | `alergias` | Paciente possui alergia (detalhes em `paciente_alergias`) |
+| `salas_cirurgicas` | `status` | Sala ativa |
+| `tipos_prontuario` | `status` | Tipo disponível para novos registros |
+| `users` | `ativo` | Usuário ativo |
+| `funcionarios` | `ativo` | Funcionário ativo |
+| `cargos` | `ativo` | Cargo ativo |
+
+A convenção também fica gravada no comentário de cada coluna (`COMMENT ON COLUMN`). No código, use `App\Support\SimNao` (`SimNao::NAO`, `SimNao::SIM`) em vez de números soltos.
+
+### Relacionamentos
+
+| Tabela | Coluna | Referencia |
+|---|---|---|
+| `leitos` | `paciente_id` | `pacientes.id` |
+| `leitos` | `responsavel_id` | `users.id` (quem mandou para limpeza) |
+| `paciente_alergias` | `paciente_id` · `alergia_id` | `pacientes.id` · `alergias.id` |
+| `prontuarios` | `paciente_id` · `tipo_prontuario_id` · `autor_id` | `pacientes.id` · `tipos_prontuario.id` · `users.id` |
+| `salas_cirurgicas` | `especialidade_id` | `especialidades.id` |
+| `agendamentos_cirurgicos` | `surgical_room_id` | `salas_cirurgicas.id` |
+| `tarefas_enfermagem` | `prioridade_id` · `categoria_id` | `prioridades.id` · `categorias.id` |
+| `tarefas_enfermagem` | `leito_id` · `paciente_id` · `responsavel_id` | `leitos.id` · `pacientes.id` · `funcionarios.id` |
+| `users` | `funcionario_id` | `funcionarios.id` (dados da pessoa: CPF, registro profissional etc.) |
+| `funcionarios` | `cargo_id` | `cargos.cargo_id` |
+
+`paciente_alergias.gravidade` aceita `leve`, `moderada` ou `grave`, e `status` aceita `ativa`, `descartada` ou `em_investigacao`.
 
 ## Arquitetura (MVP)
 
@@ -73,11 +115,13 @@ frontend/src/{views, presenters, services, stores, components/layout, config, ro
 
 `php artisan migrate --seed` cria:
 
-- Usuário administrador `admin@kordis.com` / `senha-forte-123`
+- Usuário administrador `admin@kordis.com` / `senha-forte-123`, ligado ao funcionário "Administrador do Sistema"
 - Perfis e permissões
+- 5 pacientes fictícios, com alergias e um registro clínico de exemplo cada (`PatientSeeder`)
+- Leitos, três deles ocupados por pacientes cadastrados (`BedSeeder`)
 - Tarefas de enfermagem (`NursingTaskSeeder`)
-- Leitos (`BedSeeder`)
-- 5 pacientes fictícios, cada um com um registro clínico de exemplo (`PatientSeeder`)
+
+Os cadastros de apoio (prioridades, categorias, tipos de prontuário) são preenchidos pelas próprias migrations.
 
 Os seeders são idempotentes (`updateOrCreate` / `firstOrCreate`) e podem ser rodados individualmente, ex.: `php artisan db:seed --class=PatientSeeder`.
 
@@ -117,6 +161,8 @@ cp .env.example .env
 npm run dev              # http://localhost:5173
 ```
 
+**Syncfusion:** o projeto usa a **v35** (todos os pacotes `@syncfusion/*` na mesma major). A chave de licença é amarrada à versão: precisa ser gerada para **35.x** em https://www.syncfusion.com/account/downloads. Uma chave de outra versão mostra o aviso "license key is invalid". Ao subir a major, gere uma chave nova. O tema (`tailwind`) vem do pacote `@syncfusion/ej2-tailwind-theme`, importado por componente em `src/style.css`.
+
 ## Marca e interface
 
 | Token CSS | Cor | Uso |
@@ -145,7 +191,6 @@ Se houver backend: `Migration` → `Model` → `Request` → `Service` → `Pres
 ## Próximos passos
 
 - Edição de registros clínicos (permissão `prontuarios.editar` já existe, sem endpoint).
-- Cadastro de pacientes pela interface (a API `/api/patients` já existe).
-- Vincular leitos a pacientes cadastrados (hoje o leito guarda só o nome).
+- Cadastro de usuários (login e perfis) pela interface; hoje só pelo seeder.
 - Testes automatizados de backend e frontend.
 - Chat Interno: fora do escopo atual.

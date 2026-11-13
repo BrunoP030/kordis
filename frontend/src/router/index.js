@@ -33,6 +33,12 @@ const routes = [
     meta: { permissao: 'prontuarios.visualizar' },
   },
   {
+    path: '/cadastros',
+    name: 'cadastros.painel',
+    component: () => import('../views/cadastros/CadastrosPainel.vue'),
+    meta: { permissao: 'cadastros.gerenciar' },
+  },
+  {
     path: '/acesso-negado',
     name: 'acesso-negado',
     component: () => import('../views/AcessoNegado.vue'),

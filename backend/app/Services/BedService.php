@@ -14,7 +14,7 @@ class BedService
     public function listar(): Collection
     {
         return Bed::query()
-            ->with('responsavel')
+            ->with(['responsavel', 'paciente'])
             ->orderByRaw("case status when 'ocupado' then 1 when 'limpeza' then 2 else 3 end")
             ->orderBy('codigo')
             ->get();
@@ -24,20 +24,20 @@ class BedService
     {
         $dados = match ($novoStatus) {
             'ocupado' => [
-                'paciente_nome' => $dadosExtras['paciente_nome'],
+                'paciente_id' => $dadosExtras['paciente_id'],
                 'entrada_em' => $dadosExtras['entrada_em'],
                 'previsao_alta' => $dadosExtras['previsao_alta'] ?? null,
                 'responsavel_id' => null,
             ],
             // Aguardando higienização: o responsável é quem registrou a mudança.
             'limpeza' => [
-                'paciente_nome' => null,
+                'paciente_id' => null,
                 'entrada_em' => null,
                 'previsao_alta' => null,
                 'responsavel_id' => Auth::id(),
             ],
             default => [
-                'paciente_nome' => null,
+                'paciente_id' => null,
                 'entrada_em' => null,
                 'previsao_alta' => null,
                 'responsavel_id' => null,
@@ -50,11 +50,11 @@ class BedService
 
         // Interligação com o Kanban (o broadcast só acontece depois do commit).
         if ($novoStatus === 'limpeza' && $statusAnterior !== 'limpeza') {
-            $this->tarefas->abrirHigienizacao($leito->codigo);
+            $this->tarefas->abrirHigienizacao($leito);
         } elseif ($statusAnterior === 'limpeza' && $novoStatus !== 'limpeza') {
-            $this->tarefas->concluirHigienizacao($leito->codigo);
+            $this->tarefas->concluirHigienizacao($leito);
         }
 
-        return $leito->refresh()->load('responsavel');
+        return $leito->refresh()->load(['responsavel', 'paciente']);
     }
 }

@@ -30,7 +30,8 @@ class SurgicalBookingService
     public function listarSalas(bool $incluirInativas = false): Collection
     {
         return SurgicalRoom::query()
-            ->when(! $incluirInativas, fn ($q) => $q->where('ativa', true))
+            ->with('especialidade')
+            ->when(! $incluirInativas, fn ($q) => $q->ativas())
             ->orderBy('nome')
             ->get();
     }
@@ -96,14 +97,14 @@ class SurgicalBookingService
 
     public function criarSala(array $dados): SurgicalRoom
     {
-        return SurgicalRoom::create($dados);
+        return SurgicalRoom::create($dados)->load('especialidade');
     }
 
     public function atualizarSala(SurgicalRoom $sala, array $dados): SurgicalRoom
     {
         $sala->update($dados);
 
-        return $sala;
+        return $sala->refresh()->load('especialidade');
     }
 
     private function exigirStatus(SurgicalBooking $booking, array $permitidos, string $mensagem): void

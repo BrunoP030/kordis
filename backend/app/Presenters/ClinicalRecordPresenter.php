@@ -16,7 +16,8 @@ class ClinicalRecordPresenter
             'Idade' => $paciente->idade,
             'Sexo' => $paciente->sexo,
             'TipoSanguineo' => $paciente->tipo_sanguineo,
-            'Alergias' => $paciente->alergias,
+            'PossuiAlergia' => $paciente->alergias,
+            'Alergias' => implode(', ', $paciente->nomesAlergiasVigentes()) ?: null,
             'Status' => $paciente->status,
         ];
     }
@@ -31,7 +32,8 @@ class ClinicalRecordPresenter
     {
         return [
             'Id' => $registro->id,
-            'Tipo' => $registro->tipo,
+            'Tipo' => $registro->tipo_prontuario_id,
+            'TipoNome' => $registro->tipo?->nome,
             'Titulo' => $registro->titulo,
             'Descricao' => $registro->descricao,
             'Autor' => $registro->autor?->name,

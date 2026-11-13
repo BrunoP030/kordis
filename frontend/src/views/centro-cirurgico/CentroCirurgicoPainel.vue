@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, nextTick, provide } from 'vue'
+import { ref, reactive, computed, provide } from 'vue'
 import {
   ScheduleComponent as EjsSchedule,
   ViewsDirective as EViews,
@@ -9,12 +9,17 @@ import {
   Day,
 } from '@syncfusion/ej2-vue-schedule'
 import { DialogComponent as EjsDialog } from '@syncfusion/ej2-vue-popups'
-import { DropDownListComponent as EjsDropdownlist } from '@syncfusion/ej2-vue-dropdowns'
+import {
+  ComboBoxComponent as EjsCombobox,
+  DropDownListComponent as EjsDropdownlist,
+  MultiSelectComponent as EjsMultiselect,
+} from '@syncfusion/ej2-vue-dropdowns'
 import { TextBoxComponent as EjsTextbox } from '@syncfusion/ej2-vue-inputs'
 import { DatePickerComponent as EjsDatepicker, TimePickerComponent as EjsTimepicker } from '@syncfusion/ej2-vue-calendars'
 import { ButtonComponent as EjsButton } from '@syncfusion/ej2-vue-buttons'
 import { useAuthStore } from '../../stores/auth'
 import { useSurgicalBoardPresenter } from '../../presenters/useSurgicalBoardPresenter'
+import opcoesService from '../../services/opcoesService'
 
 provide('schedule', [Day])
 
@@ -57,11 +62,41 @@ const ANESTESIAS = [
   { valor: 'bloqueio', texto: 'Bloqueio regional' },
   { valor: 'local', texto: 'Local' },
 ]
+const PROCEDIMENTOS = [
+  'Apendicectomia',
+  'Artroplastia de joelho',
+  'Cesariana',
+  'Colecistectomia videolaparoscópica',
+  'Herniorrafia',
+  'Histerectomia',
+  'Mamoplastia',
+  'Osteossíntese',
+]
+const PACIENTES = ['M.S.', 'J.F.', 'A.R.', 'Prontuário 1024', 'Prontuário 1087']
+const CIRURGIOES = ['Dra. Helena', 'Dr. Rafael Costa', 'Dra. Camila Nogueira', 'Dr. André Lima']
+const ANESTESISTAS = ['Dr. Marcelo Tavares', 'Dra. Paula Mendes', 'Dr. Eduardo Ribeiro']
+const EQUIPE_APOIO = [
+  'Bruno Pires - Enfermagem',
+  'Carla Souza - Instrumentação cirúrgica',
+  'Diego Martins - Técnico de enfermagem',
+  'Fernanda Alves - Enfermagem',
+  'João Lima - Técnico de radiologia',
+  'Mariana Costa - Auxiliar de enfermagem',
+]
+const EQUIPAMENTOS = [
+  'Intensificador de imagem',
+  'Prótese ortopédica',
+  'Tela cirúrgica',
+  'Torre de vídeo',
+]
+const equipeApoioOpcoes = computed(() => [
+  ...EQUIPE_APOIO,
+  ...(form.equipe_apoio ?? []).filter((pessoa) => !EQUIPE_APOIO.includes(pessoa)),
+])
 const rotulo = (lista, valor) => lista.find((i) => i.valor === valor)?.texto ?? '—'
 const camposLista = { text: 'texto', value: 'valor' }
 
 // ---------- Agenda ----------
-const agenda = ref(null)
 const dataSelecionada = computed(() => new Date(`${data.value}T00:00:00`))
 const dataFormatada = computed(() =>
   dataSelecionada.value.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
@@ -79,14 +114,22 @@ const eventSettings = computed(() => ({
   },
 }))
 
-const hora = (iso) => (iso ? iso.slice(11, 16) : '—')
-
-function aoCriarAgenda() {
-  nextTick(() => agenda.value?.scrollTo?.('07:00'))
+const hora = (valor) => {
+  if (!valor) return '—'
+  if (valor instanceof Date) {
+    return `${String(valor.getHours()).padStart(2, '0')}:${String(valor.getMinutes()).padStart(2, '0')}`
+  }
+  return String(valor).slice(11, 16)
 }
 
-function aoRenderizarEvento(args) {
-  args.element.classList.add(`status-${args.data.Status}`, `tipo-${args.data.Tipo}`)
+// 45 → "45 min" · 130 → "2h10" · 9921 → "6d 21h"
+function duracao(min) {
+  if (min < 60) return `${min} min`
+  const d = Math.floor(min / 1440)
+  const h = Math.floor((min % 1440) / 60)
+  const m = min % 60
+  if (d) return h ? `${d}d ${h}h` : `${d}d`
+  return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`
 }
 
 function aoAbrirPopup(args) {
@@ -130,7 +173,7 @@ function novoForm() {
     porte: null,
     anestesia: null,
     anestesista: '',
-    equipe_apoio: '',
+    equipe_apoio: [],
     equipamentos: '',
     reserva_uti: false,
     reserva_sangue: false,
@@ -156,7 +199,9 @@ function abrirFormulario(cirurgia = null, sugestao = {}) {
       porte: cirurgia.Porte,
       anestesia: cirurgia.Anestesia,
       anestesista: cirurgia.Anestesista ?? '',
-      equipe_apoio: cirurgia.EquipeApoio ?? '',
+      equipe_apoio: cirurgia.EquipeApoio
+        ? cirurgia.EquipeApoio.split(',').map((pessoa) => pessoa.trim()).filter(Boolean)
+        : [],
       equipamentos: cirurgia.Equipamentos ?? '',
       reserva_uti: cirurgia.ReservaUti,
       reserva_sangue: cirurgia.ReservaSangue,
@@ -208,7 +253,7 @@ async function salvar() {
     porte: form.porte,
     anestesia: form.anestesia,
     anestesista: texto(form.anestesista),
-    equipe_apoio: texto(form.equipe_apoio),
+    equipe_apoio: form.equipe_apoio.length ? form.equipe_apoio.join(', ') : null,
     equipamentos: texto(form.equipamentos),
     reserva_uti: form.reserva_uti,
     reserva_sangue: form.reserva_sangue,
@@ -274,13 +319,19 @@ async function confirmarCancelamento() {
 
 // ---------- Cadastro de salas ----------
 const dlgSalas = ref(null)
-const formSala = reactive({ nome: '', especialidade: '' })
+const formSala = reactive({ nome: '', especialidade_id: null })
 const errosSala = reactive({})
+const especialidades = ref([])
 
-function abrirSalas() {
+async function abrirSalas() {
   limpar(errosSala)
-  Object.assign(formSala, { nome: '', especialidade: '' })
+  Object.assign(formSala, { nome: '', especialidade_id: null })
   dlgSalas.value?.show()
+  try {
+    especialidades.value = (await opcoesService.cadastros()).Especialidades
+  } catch {
+    errosSala.geral = 'Não foi possível carregar as especialidades.'
+  }
 }
 
 async function adicionarSala() {
@@ -289,8 +340,9 @@ async function adicionarSala() {
     errosSala.nome = 'Informe o nome da sala.'
     return
   }
-  const r = await criarSala({ nome: formSala.nome.trim(), especialidade: formSala.especialidade.trim() || null, ativa: true })
-  if (r.ok) Object.assign(formSala, { nome: '', especialidade: '' })
+  // status: 1 = Sim (sala ativa)
+  const r = await criarSala({ nome: formSala.nome.trim(), especialidade_id: formSala.especialidade_id || null, status: 1 })
+  if (r.ok) Object.assign(formSala, { nome: '', especialidade_id: null })
   else Object.assign(errosSala, r.erros)
 }
 
@@ -381,20 +433,18 @@ async function trocarSala(sala) {
       </p>
 
       <ejs-schedule
-        ref="agenda"
         class="agenda"
         height="620px"
         currentView="Day"
         :selectedDate="dataSelecionada"
         :showHeaderBar="false"
         :readonly="true"
-        startHour="00:00"
+        startHour="07:00"
         endHour="24:00"
+        :workHours="{ highlight: true, start: '07:00', end: '19:00' }"
         :timeScale="{ enable: true, interval: 60, slotCount: 2 }"
         :group="{ resources: ['Salas'] }"
         :eventSettings="eventSettings"
-        :created="aoCriarAgenda"
-        :eventRendered="aoRenderizarEvento"
         :eventClick="aoClicarEvento"
         :cellClick="aoClicarCelula"
         :popupOpen="aoAbrirPopup"
@@ -405,15 +455,22 @@ async function trocarSala(sala) {
         </e-resources>
 
         <template v-slot:eventTemplate="{ data: c }">
-          <div class="reserva" :title="`${c.Subject} — ${c.Cirurgiao} (${ROTULO_STATUS[c.Status]})`">
+          <div
+            class="reserva"
+            :class="[`status-${c.Status}`, `tipo-${c.Tipo}`]"
+            :title="`${c.Subject} — ${c.Cirurgiao} (${ROTULO_STATUS[c.Status]})`"
+          >
             <div class="reserva-topo">
-              <span class="reserva-hora">{{ hora(c.StartTime) }}–{{ hora(c.EndTime) }}</span>
+              <span class="reserva-hora">{{ hora(c.StartTime) }}–{{ hora(c.FimPrevisto) }}</span>
+              <span class="reserva-status">{{ ROTULO_STATUS[c.Status] }}</span>
+              <span v-if="c.Excedente > 0" class="reserva-excedente" title="Tempo além do fim previsto">+{{ duracao(c.Excedente) }}</span>
               <span v-if="c.Tipo !== 'eletiva'" class="selo" :class="`selo-${c.Tipo}`">{{ ROTULO_TIPO[c.Tipo] }}</span>
               <span v-if="c.ReservaUti" class="material-icons reserva-icone" title="Leito de UTI reservado">local_hospital</span>
               <span v-if="c.ReservaSangue" class="material-icons reserva-icone" title="Hemoderivados reservados">bloodtype</span>
             </div>
             <strong class="reserva-procedimento">{{ c.Subject }}</strong>
-            <span class="reserva-cirurgiao">{{ c.Cirurgiao }} · {{ c.Paciente }}</span>
+            <span class="reserva-cirurgiao">{{ c.Cirurgiao }}</span>
+            <span class="reserva-paciente">Paciente: {{ c.Paciente }}</span>
           </div>
         </template>
       </ejs-schedule>
@@ -451,12 +508,22 @@ async function trocarSala(sala) {
         <fieldset class="grupo">
           <legend>Procedimento</legend>
           <label class="campo">Procedimento *
-            <ejs-textbox v-model="form.procedimento" placeholder="Ex.: Colecistectomia videolaparoscópica" />
+            <ejs-combobox
+              v-model="form.procedimento"
+              :dataSource="PROCEDIMENTOS"
+              :allowFiltering="true"
+              placeholder="Selecione ou digite o procedimento"
+            />
             <span v-if="erros.procedimento" class="campo-erro">{{ erros.procedimento }}</span>
           </label>
           <div class="linha">
             <label class="campo">Paciente (iniciais ou nº do prontuário) *
-              <ejs-textbox v-model="form.paciente" placeholder="Ex.: M.S." />
+              <ejs-combobox
+                v-model="form.paciente"
+                :dataSource="PACIENTES"
+                :allowFiltering="true"
+                placeholder="Selecione ou digite as iniciais ou nº do prontuário"
+              />
               <span class="campo-ajuda">LGPD: nunca informe o nome completo.</span>
               <span v-if="erros.paciente" class="campo-erro">{{ erros.paciente }}</span>
             </label>
@@ -494,11 +561,21 @@ async function trocarSala(sala) {
           <legend>Equipe</legend>
           <div class="linha">
             <label class="campo">Cirurgião *
-              <ejs-textbox v-model="form.cirurgiao" placeholder="Ex.: Dra. Helena" />
+              <ejs-combobox
+                v-model="form.cirurgiao"
+                :dataSource="CIRURGIOES"
+                :allowFiltering="true"
+                placeholder="Selecione ou digite o nome"
+              />
               <span v-if="erros.cirurgiao" class="campo-erro">{{ erros.cirurgiao }}</span>
             </label>
             <label class="campo">Anestesista
-              <ejs-textbox v-model="form.anestesista" />
+              <ejs-combobox
+                v-model="form.anestesista"
+                :dataSource="ANESTESISTAS"
+                :allowFiltering="true"
+                placeholder="Selecione ou digite o nome"
+              />
             </label>
           </div>
           <div class="linha">
@@ -506,7 +583,15 @@ async function trocarSala(sala) {
               <ejs-dropdownlist v-model="form.anestesia" :dataSource="ANESTESIAS" :fields="camposLista" placeholder="Selecione" :showClearButton="true" />
             </label>
             <label class="campo">Equipe de apoio
-              <ejs-textbox v-model="form.equipe_apoio" placeholder="Auxiliares, instrumentador, enfermagem" />
+              <ejs-multiselect
+                v-model="form.equipe_apoio"
+                :dataSource="equipeApoioOpcoes"
+                mode="Box"
+                :allowFiltering="true"
+                :closePopupOnSelect="false"
+                :showDropDownIcon="true"
+                placeholder="Selecione uma ou mais pessoas"
+              />
             </label>
           </div>
         </fieldset>
@@ -514,7 +599,12 @@ async function trocarSala(sala) {
         <fieldset class="grupo">
           <legend>Preparo e recursos</legend>
           <label class="campo">Materiais e equipamentos especiais (OPME)
-            <ejs-textbox v-model="form.equipamentos" :multiline="true" placeholder="Ex.: Torre de vídeo, intensificador de imagem, prótese..." />
+            <ejs-combobox
+              v-model="form.equipamentos"
+              :dataSource="EQUIPAMENTOS"
+              :allowFiltering="true"
+              placeholder="Selecione ou digite o material ou equipamento"
+            />
           </label>
           <div class="linha opcoes">
             <label class="opcao"><input v-model="form.reserva_uti" type="checkbox" /> Reservar leito de UTI no pós-operatório</label>
@@ -618,7 +708,14 @@ async function trocarSala(sala) {
             <span v-if="errosSala.nome" class="campo-erro">{{ errosSala.nome }}</span>
           </label>
           <label class="campo">Especialidade
-            <ejs-textbox v-model="formSala.especialidade" placeholder="Ex.: Ortopedia" />
+            <ejs-dropdownlist
+              v-model="formSala.especialidade_id"
+              :dataSource="especialidades"
+              :fields="{ text: 'Nome', value: 'Id' }"
+              :showClearButton="true"
+              placeholder="Nenhuma"
+            />
+            <span v-if="errosSala.especialidade_id" class="campo-erro">{{ errosSala.especialidade_id }}</span>
           </label>
         </div>
         <div class="acoes"><ejs-button type="submit" is-primary>Adicionar sala</ejs-button></div>
@@ -717,25 +814,43 @@ async function trocarSala(sala) {
 .vazio-icone { font-size: 44px; color: var(--kordis-teal-500); }
 
 /* Blocos na agenda */
-.reserva { display: flex; flex-direction: column; padding: 4px 6px; color: var(--kordis-text-primary); cursor: pointer; }
+.reserva {
+  display: flex;
+  box-sizing: border-box;
+  height: 100%;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  padding: 8px 10px;
+  color: var(--kordis-text-primary);
+  border-left: 4px solid var(--kordis-status-agendado-dot);
+  background: var(--kordis-status-agendado-bg);
+  cursor: pointer;
+}
 .reserva-topo { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--kordis-text-secondary); }
+.reserva-status { font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .reserva-icone { font-size: 14px; }
+.reserva-excedente { font-size: 10px; font-weight: 700; color: var(--kordis-danger-text); }
 .reserva-procedimento { font-weight: 700; }
 .reserva-cirurgiao { font-size: 12px; color: var(--kordis-text-secondary); }
+.reserva-paciente { font-size: 11px; color: var(--kordis-text-secondary); }
 
-.agenda :deep(.e-appointment) { border: 0; border-left: 4px solid transparent; color: var(--kordis-text-primary); }
-.agenda :deep(.e-appointment.status-agendado) { background: var(--kordis-status-agendado-bg); border-left-color: var(--kordis-status-agendado-dot); }
-.agenda :deep(.e-appointment.status-em_andamento) { background: var(--kordis-status-andamento-bg); border-left-color: var(--kordis-status-andamento-dot); }
-.agenda :deep(.e-appointment.status-atrasado) {
-  background: color-mix(in srgb, var(--kordis-task-urgente) 15%, var(--kordis-bg-page));
-  border-left-color: var(--kordis-task-urgente);
+/* O tema EJ2 pinta o bloco de roxo com `.e-schedule .e-vertical-view .e-day-wrapper .e-appointment`;
+   o seletor precisa ser mais específico para vencer, e o template tem de ocupar a altura toda. */
+.agenda :deep(.e-vertical-view .e-day-wrapper .e-appointment),
+.agenda :deep(.e-vertical-view .e-all-day-appointment-wrapper .e-appointment) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.agenda :deep(.e-appointment.status-limpeza) {
-  background: color-mix(in srgb, var(--kordis-task-progresso) 18%, var(--kordis-bg-page));
-  border-left-color: var(--kordis-task-progresso);
-}
-.agenda :deep(.e-appointment.status-concluido) { background: var(--kordis-bg-sidebar); border-left-color: var(--kordis-text-secondary); }
-.agenda :deep(.e-appointment.tipo-emergencia) { box-shadow: inset 0 0 0 1px var(--kordis-task-urgente); }
+.agenda :deep(.e-vertical-view .e-day-wrapper .e-appointment > *) { height: 100%; }
+.reserva.status-em_andamento { background: var(--kordis-status-andamento-bg); border-left-color: var(--kordis-status-andamento-dot); }
+.reserva.status-atrasado { background: color-mix(in srgb, var(--kordis-task-urgente) 15%, var(--kordis-bg-page)); border-left-color: var(--kordis-task-urgente); }
+.reserva.status-limpeza { background: color-mix(in srgb, var(--kordis-task-progresso) 18%, var(--kordis-bg-page)); border-left-color: var(--kordis-task-progresso); }
+.reserva.status-concluido { background: var(--kordis-bg-sidebar); border-left-color: var(--kordis-text-secondary); }
+.reserva.tipo-emergencia { box-shadow: inset 0 0 0 1px var(--kordis-task-urgente); }
 
 /* Selos */
 .selo {

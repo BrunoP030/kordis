@@ -19,7 +19,7 @@
  */
 export default [
   {
-    label: 'Dashboard',
+    label: 'Painel',
     icon: 'dashboard',
     routeName: 'dashboard',
     permission: 'dashboard.visualizar',
@@ -41,5 +41,11 @@ export default [
     icon: 'folder_shared',
     routeName: 'prontuarios.painel',
     permission: 'prontuarios.visualizar',
+  },
+  {
+    label: 'Cadastro',
+    icon: 'app_registration',
+    routeName: 'cadastros.painel',
+    permission: 'cadastros.gerenciar',
   },
 ]

@@ -10,6 +10,9 @@ class Patient extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'pacientes';
+
+    /** alergias: 0 = Não, 1 = Sim (detalhes em paciente_alergias) */
     protected $fillable = [
         'nome_completo', 'cpf', 'cartao_sus', 'data_nascimento', 'sexo',
         'telefone', 'email', 'endereco', 'tipo_sanguineo', 'alergias', 'status', 'criado_por',
@@ -17,7 +20,7 @@ class Patient extends Model
 
     protected function casts(): array
     {
-        return ['data_nascimento' => 'date'];
+        return ['data_nascimento' => 'date', 'alergias' => 'integer'];
     }
 
     public function criadoPor()
@@ -27,7 +30,22 @@ class Patient extends Model
 
     public function clinicalRecords()
     {
-        return $this->hasMany(ClinicalRecord::class);
+        return $this->hasMany(ClinicalRecord::class, 'paciente_id');
+    }
+
+    public function pacienteAlergias()
+    {
+        return $this->hasMany(PacienteAlergia::class, 'paciente_id');
+    }
+
+    /** Nomes das alergias que não foram descartadas (ativas e em investigação). */
+    public function nomesAlergiasVigentes(): array
+    {
+        return $this->pacienteAlergias
+            ->where('status', '!=', 'descartada')
+            ->map(fn (PacienteAlergia $pa) => $pa->alergia->nome . ($pa->status === 'em_investigacao' ? ' (em investigação)' : ''))
+            ->values()
+            ->all();
     }
 
     public function getIdadeAttribute(): int

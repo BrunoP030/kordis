@@ -1,13 +1,21 @@
-@import "@syncfusion/ej2-base/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-buttons/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-inputs/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-dropdowns/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-calendars/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-grids/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-navigations/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-kanban/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-popups/styles/tailwind.css";
-@import "@syncfusion/ej2-vue-schedule/styles/tailwind.css";
+/*
+ * Tema Syncfusion "tailwind" (v35+): os estilos saíram dos pacotes de componente e ficam no
+ * pacote @syncfusion/ej2-tailwind-theme, um index.css por componente (já inclui as dependências).
+ * Ao usar um componente Syncfusion novo, importe aqui o index.css dele.
+ */
+@import "@syncfusion/ej2-tailwind-theme/styles/base/base.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/button/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/textbox/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/drop-down-list/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/combo-box/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/multi-select/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/datepicker/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/timepicker/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/datetimepicker/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/dialog/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/grid/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/kanban/index.css";
+@import "@syncfusion/ej2-tailwind-theme/styles/schedule/index.css";
 
 /*
  * Tokens de marca Kordis — extraídos do Figma (logo + print do dashboard).

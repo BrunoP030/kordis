@@ -3,6 +3,7 @@
 namespace App\Presenters;
 
 use App\Models\NursingTask;
+use App\Models\Prioridade;
 use Illuminate\Support\Collection;
 
 class NursingTaskPresenter
@@ -29,24 +30,30 @@ class NursingTaskPresenter
             'Titulo' => $task->titulo,
             'Subtitulo' => $this->subtitulo($task),
             'CorBorda' => $this->corBorda($task),
-            'Categoria' => $task->categoria,
-            'Leito' => $task->leito,
+            'CategoriaId' => $task->categoria_id,
+            'Categoria' => $task->categoria?->nome,
+            'PrioridadeId' => $task->prioridade_id,
+            'Prioridade' => $task->prioridade?->nome,
+            'LeitoId' => $task->leito_id,
+            'Leito' => $task->leito?->codigo,
+            'PacienteId' => $task->paciente_id,
+            'Paciente' => $task->paciente?->nome_completo,
             'Concluido' => $task->status === 'concluido',
         ];
     }
 
     private function subtitulo(NursingTask $task): string
     {
-        $partes = array_filter([$task->paciente_nome, $task->descricao]);
+        $partes = array_filter([$task->paciente?->nome_completo, $task->descricao]);
 
-        return $partes ? implode(' • ', $partes) : ($task->leito ? "Leito {$task->leito}" : '');
+        return $partes ? implode(' • ', $partes) : ($task->leito?->codigo ?? '');
     }
 
     private function corBorda(NursingTask $task): string
     {
         return match (true) {
             $task->status === 'concluido' => 'var(--kordis-task-concluido)',
-            $task->prioridade === 'urgente' => 'var(--kordis-task-urgente)',
+            $task->prioridade?->nome === Prioridade::URGENTE => 'var(--kordis-task-urgente)',
             $task->status === 'em_andamento' => 'var(--kordis-task-progresso)',
             default => 'var(--kordis-navy-800)',
         };

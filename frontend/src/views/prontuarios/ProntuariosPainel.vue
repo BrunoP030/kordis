@@ -1,11 +1,12 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { DialogComponent as EjsDialog } from '@syncfusion/ej2-vue-popups'
 import { DropDownListComponent as EjsDropdownlist } from '@syncfusion/ej2-vue-dropdowns'
 import { TextBoxComponent as EjsTextbox } from '@syncfusion/ej2-vue-inputs'
 import { ButtonComponent as EjsButton } from '@syncfusion/ej2-vue-buttons'
 import { useAuthStore } from '../../stores/auth'
 import { useClinicalRecordPresenter } from '../../presenters/useClinicalRecordPresenter'
+import opcoesService from '../../services/opcoesService'
 
 const auth = useAuthStore()
 // Apenas médicos/cirurgiões (prontuarios.criar) veem o botão e o formulário de inserção.
@@ -16,14 +17,27 @@ const {
   buscarPacientes, selecionarPaciente, criarRegistro,
 } = useClinicalRecordPresenter()
 
-const TIPOS = [
-  { valor: 'evolucao', texto: 'Evolução clínica', icone: 'monitor_heart' },
-  { valor: 'prescricao', texto: 'Prescrição', icone: 'medication' },
-  { valor: 'exame', texto: 'Exame', icone: 'biotech' },
-  { valor: 'procedimento', texto: 'Procedimento', icone: 'medical_services' },
-  { valor: 'alta', texto: 'Alta', icone: 'logout' },
-]
-const info = (tipo) => TIPOS.find((t) => t.valor === tipo) ?? TIPOS[0]
+// Tipos vêm da tabela tipos_prontuario (só os com status 1 = Sim); o ícone é escolhido pelo nome.
+const ICONES = {
+  'Evolução': 'monitor_heart',
+  'Prescrição': 'medication',
+  'Exame': 'biotech',
+  'Procedimento': 'medical_services',
+  'Alta': 'logout',
+}
+const tiposProntuario = ref([])
+const TIPOS = computed(() =>
+  tiposProntuario.value.map((t) => ({ valor: t.Id, texto: t.Nome, icone: ICONES[t.Nome] ?? 'description' }))
+)
+const info = (tipo) => TIPOS.value.find((t) => t.valor === tipo) ?? { valor: tipo, texto: '', icone: 'description' }
+
+onMounted(async () => {
+  try {
+    tiposProntuario.value = (await opcoesService.cadastros()).TiposProntuario
+  } catch {
+    // Sem os tipos, o histórico ainda aparece (com o nome vindo do próprio registro).
+  }
+})
 
 const formataData = (iso) =>
   new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -46,11 +60,11 @@ const registrosFiltrados = computed(() =>
 const dialogo = ref(null)
 const enviando = ref(false)
 const erros = reactive({})
-const form = reactive({ tipo: 'evolucao', titulo: '', descricao: '' })
+const form = reactive({ tipo_prontuario_id: null, titulo: '', descricao: '' })
 
 function abrirModal() {
   Object.keys(erros).forEach((k) => delete erros[k])
-  Object.assign(form, { tipo: 'evolucao', titulo: '', descricao: '' })
+  Object.assign(form, { tipo_prontuario_id: TIPOS.value[0]?.valor ?? null, titulo: '', descricao: '' })
   dialogo.value?.show()
 }
 
@@ -62,7 +76,7 @@ async function salvar() {
 
   enviando.value = true
   const resultado = await criarRegistro({
-    tipo: form.tipo,
+    tipo_prontuario_id: form.tipo_prontuario_id,
     titulo: form.titulo.trim(),
     descricao: form.descricao.trim(),
   })
@@ -164,7 +178,7 @@ async function salvar() {
               <span class="marcador" aria-hidden="true"><span class="material-icons">{{ info(r.Tipo).icone }}</span></span>
               <article class="registro-corpo">
                 <header class="registro-topo">
-                  <span class="registro-tipo">{{ info(r.Tipo).texto }}</span>
+                  <span class="registro-tipo">{{ r.TipoNome }}</span>
                   <time :datetime="r.CriadoEm">{{ formataData(r.CriadoEm) }}</time>
                 </header>
                 <h3 class="registro-titulo">{{ r.Titulo }}</h3>
@@ -192,8 +206,8 @@ async function salvar() {
         <p class="paciente-modal">Paciente: <strong>{{ paciente?.Nome }}</strong></p>
 
         <label class="campo">Tipo de registro
-          <ejs-dropdownlist v-model="form.tipo" :dataSource="TIPOS" :fields="{ text: 'texto', value: 'valor' }" />
-          <span v-if="erros.tipo" class="campo-erro">{{ erros.tipo }}</span>
+          <ejs-dropdownlist v-model="form.tipo_prontuario_id" :dataSource="TIPOS" :fields="{ text: 'texto', value: 'valor' }" />
+          <span v-if="erros.tipo_prontuario_id" class="campo-erro">{{ erros.tipo_prontuario_id }}</span>
         </label>
 
         <label class="campo">Título *
